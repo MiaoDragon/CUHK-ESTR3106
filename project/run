@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# CSCI3180 Principles of Programming Languages
+#
+# --- Declaration ---
+#
+# I declare that the assignment here submitted is original except for source
+# material explicitly acknowledged. I also acknowledge that I am aware of
+# University policy and regulations on honesty in academic work, and of the
+# disciplinary guidelines and procedures applicable to breaches of such policy
+# and regulations, as contained in the website
+# http://www.cuhk.edu.hk/policy/academichonesty/
+#
+# Assignment 5
+# Name : Miao Ying Long
+# Student ID : 1155046924
+# Email Addr : ylmiao4@cse.cuhk.edu.hk
+#
+# References:
+# http://stackoverflow.com/questions/15557857/how-to-kill-all-processes-that-were-opened-by-a-shell-script-upon-ctrl-c
+
+
+#
+# help_run() To print help
+#
+help_run()
+{
+  echo "Usage: $0 -m -d"
+  echo "Options: These are optional argument"
+  echo " -m num of human player [0..2]"
+  echo " -d demo values (if any of the above options are used "
+  echo "                 their values are not taken)"
+  exit 1
+}
+# clean group
+intexit()
+{
+    kill -HUP -$$
+}
+
+hupexit()
+{
+    echo
+    echo "Interrupted"
+    exit
+}
+trap hupexit HUP
+trap intexit INT
+#
+#Set default value for variable
+man=1
+isdef=0
+#
+if [ $# -lt 1 ]; then
+  help_run
+fi
+while getopts m:d opt
+do
+  case "$opt" in
+    m) man="$OPTARG";;
+    d) isdef=1;;
+    \?) help_run;;
+  esac
+done
+if [ $isdef -eq 1 ]
+then
+  man=1
+fi
+#
+if [ $man -gt 2 ]
+then
+  echo "At most 2 human player"
+  man=2
+fi
+#
+./game_admin &
+sleep 1     #take some time for game admin to start
+#
+./display_admin &
+sleep 1     #take some time for display admin to start
+#
+./courier 2 &
+#
+if [ $man -gt 0 ]
+then
+  ./input_admin &
+  sleep 1     #take some time for input admin to start
+#
+  for ((  i = 0 ;  i < $man;  i++  ))
+  do
+    ./courier "$i" &
+  done
+fi
+sleep 1
+for (( i = $man ; i < 2; i++ ))
+do
+  ./cycle "$i" &
+done
+
+./painter &
+sleep 1
+./timer &
+
+if [ $man -gt 0 ]
+then
+  ./keyboard
+fi
